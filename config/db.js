@@ -48,7 +48,9 @@ async function testConnection() {
     }
 }
 
-// Ejecutar test al iniciar
-testConnection();
+// Ejecutar test al iniciar (excepto en tests)
+if (process.env.NODE_ENV !== 'test') {
+    testConnection();
+}
 
 export default pool;

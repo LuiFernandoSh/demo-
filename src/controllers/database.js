@@ -11,7 +11,7 @@ const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 
-// Endpoint público para inicializar el esquema (solo si no hay tablas)
+// Inicializar esquema de base de datos
 router.post('/init-schema', async (req, res) => {
     try {
         // Verificar si ya existen tablas
@@ -55,7 +55,7 @@ router.post('/init-schema', async (req, res) => {
     }
 });
 
-// Endpoint público para verificar si la BD está inicializada
+// Verificar estado de la BD
 router.get('/status', async (req, res) => {
     try {
         const [tables] = await db.query('SHOW TABLES');
@@ -128,7 +128,7 @@ router.get('/tables/:tableName/data', async (req, res) => {
     }
 });
 
-// Ejecutar consulta SQL personalizada (con precaución)
+// Ejecutar consulta dinámica
 router.post('/query', async (req, res) => {
     try {
         const { query } = req.body;

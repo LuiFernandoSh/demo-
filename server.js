@@ -75,12 +75,17 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Iniciar servidor
-app.listen(PORT, () => {
-    console.log('=================================');
-    console.log('🚀 Servidor Backend Iniciado');
-    console.log(`📡 Puerto: ${PORT}`);
-    console.log(`🌐 URL: http://localhost:${PORT}`);
-    console.log(`🏥 Health Check: http://localhost:${PORT}/api/health`);
-    console.log('=================================');
-});
+// Iniciar servidor solo si no estamos en entorno de testing
+if (process.env.NODE_ENV !== 'test') {
+    app.listen(PORT, () => {
+        console.log('=================================');
+        console.log('🚀 Servidor Backend Iniciado');
+        console.log(`📡 Puerto: ${PORT}`);
+        console.log(`🌐 URL: http://localhost:${PORT}`);
+        console.log(`🏥 Health Check: http://localhost:${PORT}/api/health`);
+        console.log('=================================');
+    });
+}
+
+// Exportar app para pruebas unitarias con Jest
+export default app;

@@ -1,0 +1,34 @@
+# Dependencias
+node_modules
+frontend/node_modules
+frontend/.vite
+frontend/dist
+
+
+
+# Git
+.git
+.gitignore
+
+# Logs
+*.log
+npm-debug.log*
+jest_output.txt
+test_logs.txt
+
+# IDE
+.vscode
+.idea
+*.swp
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Tests
+tests

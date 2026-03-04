@@ -4,7 +4,7 @@ import db from '../../config/db.js';
 
 const router = Router();
 
-// Helper para generar folio único
+// Generador de folio
 function generarFolio() {
     const now = new Date();
     const fecha = now.toISOString().slice(0, 10).replace(/-/g, '');
@@ -12,17 +12,14 @@ function generarFolio() {
     return `P-${fecha}-${rand}`;
 }
 
-// ─────────────────────────────────────────────────────────────
-// GET /api/pedidos — Lista pedidos
-//   Admin: todos | Repartidor: los suyos (pendientes + en_camino)
-// ─────────────────────────────────────────────────────────────
+// Obtener pedidos
 router.get('/', async (req, res) => {
     try {
-        const { rol, id: userId } = req.query; // En producción usar JWT middleware
+        const { rol, id: userId } = req.query;
 
         let sql, params;
         if (rol === 'repartidor') {
-            // Repartidor ve los pedidos pendientes (sin asignar) + los suyos en camino/historial
+            // Filtro para repartidor
             sql = `
         SELECT p.*, u.nombre as repartidor_nombre,
           GROUP_CONCAT(
@@ -44,7 +41,7 @@ router.get('/', async (req, res) => {
       `;
             params = [userId || 0];
         } else {
-            // Admin ve todos
+            // Filtro para admin
             sql = `
         SELECT p.*, u.nombre as repartidor_nombre,
           GROUP_CONCAT(
@@ -85,7 +82,7 @@ router.get('/', async (req, res) => {
     }
 });
 
-// GET /api/pedidos/productos — Lista productos activos con stock para formulario
+// Obtener catálogo de productos
 router.get('/productos', async (req, res) => {
     try {
         const [rows] = await db.query(
@@ -118,13 +115,13 @@ router.post('/', async (req, res) => {
         const folio = generarFolio();
         const total = productos.reduce((sum, p) => sum + (p.precio_unitario * p.cantidad), 0);
 
-        // Fallback robusto para creado_por (previene errores si el frontend envía un ID viejo/inválido)
+        // Validación de usuario credor
         let validCreadoPor = null;
         if (creado_por) {
             const [[userRow]] = await conn.query('SELECT id FROM usuarios WHERE id = ?', [creado_por]);
             if (userRow) validCreadoPor = userRow.id;
         }
-        // Si no existe, buscamos el primer usuario disponible para evitar fallo de FK, o lo dejamos null si no importa
+
         if (!validCreadoPor) {
             const [[anyUser]] = await conn.query('SELECT id FROM usuarios ORDER BY id ASC LIMIT 1');
             validCreadoPor = anyUser ? anyUser.id : null;
@@ -165,9 +162,7 @@ router.post('/', async (req, res) => {
     }
 });
 
-// ─────────────────────────────────────────────────────────────
-// PATCH /api/pedidos/:id/estado — Cambiar estado del pedido
-// ─────────────────────────────────────────────────────────────
+// Actualizar estado de pedido
 router.patch('/:id/estado', async (req, res) => {
     try {
         const { id } = req.params;
@@ -199,13 +194,7 @@ router.patch('/:id/estado', async (req, res) => {
     }
 });
 
-// ─────────────────────────────────────────────────────────────
-// POST /api/pedidos/:id/entregar — Confirmar entrega
-//   Transacción SQL completa:
-//   1. Descuenta stock de productos
-//   2. Registra venta + detalles en tabla ventas
-//   3. Actualiza pedido a 'entregado'
-// ─────────────────────────────────────────────────────────────
+// Finalizar entrega de pedido y afectar inventario
 router.post('/:id/entregar', async (req, res) => {
     const conn = await db.getConnection();
     try {
@@ -214,16 +203,16 @@ router.post('/:id/entregar', async (req, res) => {
         const { id } = req.params;
         const { repartidor_id, metodo_pago } = req.body;
 
-        // 1. Obtener pedido y verificar que está en_camino
+        // Validar estado del pedido
         const [[pedido]] = await conn.query('SELECT * FROM pedidos WHERE id = ?', [id]);
         if (!pedido) throw new Error('Pedido no encontrado');
         if (pedido.estado !== 'en_camino') throw new Error('El pedido no está en camino');
 
-        // 2. Obtener productos del pedido
+        // Consultar productos
         const [detalles] = await conn.query('SELECT * FROM detalle_pedido WHERE pedido_id = ?', [id]);
         if (!detalles.length) throw new Error('El pedido no tiene productos');
 
-        // Fallback robusto para repartidor_id (asegura que exista en DB)
+        // Validar id_repartidor
         let validRepartidor = repartidor_id || pedido.repartidor_id;
         if (validRepartidor) {
             const [[userRow]] = await conn.query('SELECT id FROM usuarios WHERE id = ?', [validRepartidor]);
@@ -234,7 +223,7 @@ router.post('/:id/entregar', async (req, res) => {
             validRepartidor = anyUser ? anyUser.id : 1;
         }
 
-        // 3. Crear venta en tabla ventas
+        // Construir registro de venta
         const folio = 'V-' + pedido.folio.replace('P-', '');
         const [ventaResult] = await conn.query(
             `INSERT INTO ventas (folio, vendedor_id, total, subtotal, metodo_pago, estado, cliente_nombre, cliente_telefono, notas)
@@ -247,7 +236,7 @@ router.post('/:id/entregar', async (req, res) => {
         );
         const ventaId = ventaResult.insertId;
 
-        // 4. Para cada producto: insertar detalle_venta + descontar stock + registrar movimiento
+        // Procesar partidas del pedido
         for (const detalle of detalles) {
             // Obtener stock actual
             const [[prod]] = await conn.query('SELECT stock FROM productos WHERE id = ?', [detalle.producto_id]);

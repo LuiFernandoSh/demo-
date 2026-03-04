@@ -1,29 +1,90 @@
-# Ignorar node_modules
+# ===========================
+# Dependencias
+# ===========================
 node_modules/
 **/node_modules/
 
-# Ignorar archivos de entorno
+# ===========================
+# Variables de entorno (contienen contraseñas y secrets)
+# ===========================
 .env
 .env.local
 .env.production
+.env.*.local
 
-# Ignorar archivos de build
+# ===========================
+# Archivos de build / distribución
+# ===========================
 dist/
 build/
-*.log
+out/
 
-# Ignorar archivos del sistema
+# ===========================
+# Logs
+# ===========================
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# ===========================
+# Archivos de salida de tests
+# ===========================
+jest_output.txt
+test_logs.txt
+coverage/
+
+# ===========================
+# Archivos del sistema operativo
+# ===========================
 .DS_Store
 Thumbs.db
 desktop.ini
+ehthumbs.db
+*.lnk
 
-# Ignorar carpetas de IDE
+# ===========================
+# Carpetas de IDE / Editores
+# ===========================
 .vscode/
 .idea/
 *.swp
 *.swo
+*.sublime-project
+*.sublime-workspace
+*.code-workspace
 
-# Ignorar archivos temporales
+# ===========================
+# Archivos temporales
+# ===========================
 *.tmp
 *.temp
 ~*
+*.bak
+*.orig
+
+# ===========================
+# Docker (volúmenes locales de datos)
+# ===========================
+mysql_data/
+data/
+docker-volumes/
+
+# ===========================
+# Caché
+# ===========================
+.cache/
+.npm/
+.eslintcache
+.parcel-cache/
+
+# ===========================
+# Archivos comprimidos innecesarios
+# ===========================
+*.zip
+*.tar.gz
+*.rar
+
+.env*
+!.env.example
